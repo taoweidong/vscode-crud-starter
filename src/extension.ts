@@ -3,13 +3,16 @@ import { registerCommands } from './commands';
 import { CONFIG, STORAGE, VIEW } from './constants';
 import type { TreeNode } from './providers/itemsTreeDataProvider';
 import { ItemsTreeDataProvider } from './providers/itemsTreeDataProvider';
+import { EnvironmentTreeProvider } from './providers/environmentTreeProvider';
 import { ItemService } from './services/itemService';
 import { JsonFileStore } from './services/stores/jsonFileStore';
 import { MementoStore } from './services/stores/mementoStore';
 import type { IItemStore } from './services/stores/itemStore';
+import { TaskRunner } from './tasks/taskRunner';
+import { TASKS } from './tasks/taskRegistry';
 
 /**
- * 插件入口：只做「组装」——选择数据源、创建服务与视图、注册命令。
+ * 插件入口：只做「组装」——选择数据源、创建服务与视图、注册命令、调度启动任务。
  * 各层职责见 README 的架构说明；想更换数据源改 createStore() 即可。
  */
 export function activate(context: vscode.ExtensionContext): void {
@@ -33,13 +36,28 @@ export function activate(context: vscode.ExtensionContext): void {
   );
   void updateViewStatus(treeView, service);
 
+  // 启动任务框架：激活时默认执行环境检测脚本（可用 crudStarter.runStartupTasks 关闭）
+  // runAll 不 await——探测走子进程，不能阻塞激活流程
+  const outputChannel = vscode.window.createOutputChannel('CRUD Starter');
+  context.subscriptions.push(outputChannel);
+  const taskRunner = new TaskRunner(TASKS, outputChannel);
+  context.subscriptions.push(taskRunner);
+  const envProvider = new EnvironmentTreeProvider(taskRunner);
+  const envView = vscode.window.createTreeView(VIEW.envViewId, {
+    treeDataProvider: envProvider,
+  });
+  context.subscriptions.push(envView);
+  if (vscode.workspace.getConfiguration(CONFIG.section).get<boolean>(CONFIG.runStartupTasks, true)) {
+    void taskRunner.runAll();
+  }
+
   // 数据文件被外部修改（手工编辑 / 同步盘）时自动刷新
   const watcher = createStorageWatcher(context, store, service);
   if (watcher) {
     context.subscriptions.push(watcher);
   }
 
-  registerCommands(context, service, store);
+  registerCommands(context, service, store, taskRunner, outputChannel);
 }
 
 export function deactivate(): void {

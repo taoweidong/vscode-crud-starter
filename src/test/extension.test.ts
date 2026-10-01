@@ -1,7 +1,11 @@
 import * as assert from 'assert';
+import * as vscode from 'vscode';
 import { type Item, type ItemDraft } from '../models/item';
 import { ItemService, ItemValidationError } from '../services/itemService';
 import type { IItemStore } from '../services/stores/itemStore';
+import { environmentTask } from '../tasks/environmentTask';
+import { TaskRunner } from '../tasks/taskRunner';
+import type { StartupTask } from '../tasks/types';
 
 /** 测试用内存数据源：验证服务层逻辑，不依赖文件系统。 */
 class MemoryStore implements IItemStore {
@@ -89,5 +93,70 @@ suite('ItemService 增删改查', () => {
     await service.create(draft('B', { category: '工作' }));
     await service.create(draft('C', { category: '生活' }));
     assert.deepStrictEqual(await service.getCategories(), ['工作', '生活']);
+  });
+});
+
+suite('启动任务框架', () => {
+  function fakeTask(id: string, title: string, behavior: () => Promise<void>): StartupTask {
+    return {
+      id,
+      title,
+      async run() {
+        await behavior();
+        return {
+          taskId: id,
+          taskTitle: title,
+          status: 'ok',
+          durationMs: 1,
+          finishedAt: new Date().toISOString(),
+          items: [{ label: '示例', description: '1.0.0', status: 'ok' }],
+        };
+      },
+    };
+  }
+
+  test('TaskRunner 依次执行任务并发出变更事件', async () => {
+    let runs = 0;
+    const task = fakeTask('demo', '演示任务', async () => {
+      runs++;
+    });
+    const runner = new TaskRunner([task], vscode.window.createOutputChannel('CRUD Starter Test'));
+    let events = 0;
+    runner.onDidChangeItems(() => events++);
+    await runner.runAll();
+    assert.strictEqual(runs, 1);
+    assert.strictEqual(events, 2); // 开始一次 + 结束一次
+    assert.strictEqual(runner.lastResults.length, 1);
+    assert.strictEqual(runner.lastResults[0].items[0].label, '示例');
+  });
+
+  test('任务抛错时降级为 error 结果且不影响后续任务', async () => {
+    const boom = fakeTask('boom', '爆炸任务', async () => {
+      throw new Error('boom');
+    });
+    const okTask = fakeTask('ok', '正常任务', async () => undefined);
+    const runner = new TaskRunner(
+      [boom, okTask],
+      vscode.window.createOutputChannel('CRUD Starter Test')
+    );
+    await runner.runAll();
+    assert.strictEqual(runner.lastResults.length, 2);
+    assert.strictEqual(runner.lastResults[0].status, 'error');
+    assert.strictEqual(runner.lastResults[1].status, 'ok');
+  });
+
+  test('环境检测任务能探测到 Node.js（npm test 运行前提）', async () => {
+    const runner = new TaskRunner(
+      [environmentTask],
+      vscode.window.createOutputChannel('CRUD Starter Test')
+    );
+    await runner.runAll();
+    const env = runner.lastResults[0];
+    const node = env.items.find((item) => item.label === 'Node.js');
+    assert.ok(node, '应包含 Node.js 条目');
+    assert.strictEqual(node.status, 'ok');
+    assert.match(node.description ?? '', /^v/);
+    assert.ok(env.items.some((item) => item.label === 'Python'));
+    assert.ok(env.items.some((item) => item.label === 'Git'));
   });
 });

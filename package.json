@@ -2,7 +2,7 @@
   "name": "crud-starter",
   "displayName": "CRUD Starter（界面化增删改查模板）",
   "description": "VSCode 插件初始化项目：提供界面化增删改查操作（侧边栏树视图 + Webview 表单 + 全套菜单/右键菜单示例），数据源可替换，开箱即用、易于扩展。",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "publisher": "your-publisher",
   "keywords": [
     "crud",
@@ -33,6 +33,10 @@
         {
           "id": "crudStarter.itemsView",
           "name": "条目列表"
+        },
+        {
+          "id": "crudStarter.envView",
+          "name": "环境信息"
         }
       ]
     },
@@ -131,6 +135,18 @@
         "title": "更多操作…",
         "category": "CRUD Starter",
         "icon": "$(ellipsis)"
+      },
+      {
+        "command": "crudStarter.refreshEnvironment",
+        "title": "刷新环境信息",
+        "category": "CRUD Starter",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "crudStarter.showEnvironmentOutput",
+        "title": "打开环境信息输出",
+        "category": "CRUD Starter",
+        "icon": "$(output)"
       }
     ],
     "submenus": [
@@ -147,15 +163,28 @@
       "view/title": [
         {
           "command": "crudStarter.newItem",
+          "when": "view == crudStarter.itemsView",
           "group": "navigation@1"
         },
         {
           "command": "crudStarter.filterItems",
+          "when": "view == crudStarter.itemsView",
           "group": "navigation@2"
         },
         {
           "command": "crudStarter.refresh",
+          "when": "view == crudStarter.itemsView",
           "group": "navigation@3"
+        },
+        {
+          "command": "crudStarter.refreshEnvironment",
+          "when": "view == crudStarter.envView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "crudStarter.showEnvironmentOutput",
+          "when": "view == crudStarter.envView",
+          "group": "navigation@2"
         }
       ],
       "view/item/context": [
@@ -262,6 +291,11 @@
           "type": "string",
           "default": ".vscode/crud-starter-items.json",
           "description": "数据存储的 JSON 文件路径（相对当前工作区根目录，使用 / 分隔）。未打开工作区时数据保存在 VSCode 全局存储中。"
+        },
+        "crudStarter.runStartupTasks": {
+          "type": "boolean",
+          "default": true,
+          "description": "插件激活时自动执行启动任务（环境检测脚本）。关闭后仍可通过「环境信息」视图的刷新按钮手动执行。"
         }
       }
     }

@@ -7,6 +7,7 @@ import { ItemService, ItemValidationError } from '../services/itemService';
 import { JsonFileStore } from '../services/stores/jsonFileStore';
 import type { IItemStore } from '../services/stores/itemStore';
 import { PRIORITY_ICONS } from '../ui/icons';
+import type { TaskRunner } from '../tasks/taskRunner';
 
 // VSCode 命令参数类型在注册期未知（与官方 API 签名一致使用 any[]）
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -22,7 +23,9 @@ type AnyArgs = any[];
 export function registerCommands(
   context: vscode.ExtensionContext,
   service: ItemService,
-  store: IItemStore
+  store: IItemStore,
+  taskRunner: TaskRunner,
+  outputChannel: vscode.OutputChannel
 ): void {
   const register = (commandId: string, callback: (...args: AnyArgs) => unknown): void => {
     context.subscriptions.push(vscode.commands.registerCommand(commandId, callback));
@@ -268,6 +271,15 @@ export function registerCommands(
 
   register(COMMAND.refresh, () => {
     service.reload();
+  });
+
+  /* ---------- 启动任务 / 环境信息（环境信息视图标题栏与命令面板） ---------- */
+  register(COMMAND.refreshEnvironment, () => {
+    void taskRunner.runAll();
+  });
+
+  register(COMMAND.showEnvironmentOutput, () => {
+    outputChannel.show(true);
   });
 
   register(COMMAND.openDataFile, async () => {

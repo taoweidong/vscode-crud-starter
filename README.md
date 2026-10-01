@@ -12,6 +12,7 @@
 | 删 | 右键「删除条目」，带模态二次确认 |
 | 克隆 | 右键「克隆条目」，一键复制 |
 | 其他 | 刷新列表、打开数据文件；数据文件被手工修改后自动刷新 |
+| 环境信息 | 激活时自动执行环境检测脚本（Python/Node/npm/Git/系统/VSCode），结果在侧边栏「环境信息」视图与输出通道展示，标题栏 ↻ 可重新执行 |
 
 表单面板特点：**由字段 Schema 驱动**（见 `src/webview/formSchema.ts`）、使用 VSCode 主题变量自动适配深浅色、符合 CSP 安全规范、必填校验、`Esc` 取消 / `Ctrl+Enter` 保存。
 
@@ -111,11 +112,19 @@ vscode-crud-starter/
     │       └── mementoStore.ts   #   兜底实现：未打开工作区时用全局存储
     ├── providers/
     │   ├── itemsTreeDataProvider.ts  # 侧边栏树视图（查）
-    │   └── itemFormPanel.ts          # Webview 表单面板（增/改，单例）
+    │   ├── itemFormPanel.ts          # Webview 表单面板（增/改，单例）
+    │   └── environmentTreeProvider.ts # 「环境信息」视图（启动任务结果展示）
     ├── webview/
-    │   ├── formSchema.ts         # ★ 表单字段 Schema（加字段只改这里）
-    │   └── formHtml.ts           #   由 Schema 渲染 CSP 合规的表单页面
-    └── test/                     # 集成测试（mocha + @vscode/test-electron）
+    │   ├── formSchema.ts             # ★ 表单字段 Schema（加字段只改这里）
+    │   └── formHtml.ts               #   由 Schema 渲染 CSP 合规的表单页面
+    ├── tasks/
+    │   ├── types.ts                  # StartupTask / TaskResult 接口（扩展点）
+    │   ├── taskRegistry.ts           # ★ 启动任务注册表（新增任务只改这里）
+    │   ├── taskRunner.ts             # 调度器：顺序执行、异常降级、事件通知
+    │   └── environmentTask.ts        # 内置任务：环境检测（Python/Node/npm/Git…）
+    ├── ui/
+    │   └── icons.ts                  # codicon 全局映射（图标语言统一）
+    └── test/                         # 集成测试（mocha + @vscode/test-electron）
 ```
 
 数据流（单向）：
@@ -175,7 +184,20 @@ export class ApiStore implements IItemStore {
 然后在 `src/extension.ts` 的 `createStore()` 中返回 `new ApiStore(...)`。业务层、树视图、表单完全不用改。
 > 提示：若数据量大，建议同时把 `ItemService` 的「读-改-全量写」改为按 ID 增删改。
 
-### 4. 打包发布
+### 4. 新增启动任务（环境检测 / 动作类脚本）
+
+启动任务在插件激活时由 `TaskRunner` 自动调度，结果自动出现在「环境信息」视图：
+
+1. 在 `src/tasks/` 下新建任务文件，实现 `StartupTask` 接口（`id` / `title` / `run(): Promise<TaskResult>`）；
+2. 在 `src/tasks/taskRegistry.ts` 的 `TASKS` 数组中加一项。
+
+内置的 `environmentTask`（环境检测）是完整示例：用 `execCapture()` 探测命令版本，逐项产出
+`TaskItem`（label/description/status）。后续「动作类」任务（如同步数据、初始化配置、执行构建）只需
+在 `run()` 里执行相应动作并返回结果摘要——调度、异常降级、输出通道、树视图展示全部自动生效。
+若不想在启动时自动执行，把结果写入 `package.json` 的 `crudStarter.runStartupTasks` 配置判断即可
+（框架已内置该开关）。
+
+### 5. 打包发布
 
 ```bash
 npm i -g @vscode/vsce

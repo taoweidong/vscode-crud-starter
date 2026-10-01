@@ -4,6 +4,8 @@ export const VIEW = {
   containerId: 'crudStarter',
   /** 条目树视图 ID */
   itemsViewId: 'crudStarter.itemsView',
+  /** 环境信息树视图 ID */
+  envViewId: 'crudStarter.envView',
   /** 树条目的 contextValue（用于菜单 when 条件） */
   itemContextValue: 'crudItem',
 } as const;
@@ -34,12 +36,20 @@ export const COMMAND = {
   copyJson: 'crudStarter.copyJson',
   /** 树条目右键 → 更多操作（QuickPick 动态菜单） */
   moreActions: 'crudStarter.moreActions',
+
+  // 启动任务 / 环境信息
+  /** 环境信息视图标题栏：重新执行启动任务 */
+  refreshEnvironment: 'crudStarter.refreshEnvironment',
+  /** 打开启动任务的输出通道 */
+  showEnvironmentOutput: 'crudStarter.showEnvironmentOutput',
 } as const;
 
 /** 配置项键名（对应设置里的 crudStarter.*）。 */
 export const CONFIG = {
   section: 'crudStarter',
   storagePath: 'storagePath',
+  /** 激活时是否自动执行启动任务 */
+  runStartupTasks: 'runStartupTasks',
 } as const;
 
 /** 存储相关常量。 */
