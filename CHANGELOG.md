@@ -4,6 +4,14 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.5.2] - 2026-10-01
+
+### 变更
+
+- 项目更名为 **vscode-starter-template**：GitHub 仓库、`package.json` 的 name/repository、
+  文档中的项目路径同步更新；扩展内品牌（CRUD Starter 视图名 / 命令分类 / 输出通道）保持不变，
+  继续描述插件自身功能。
+
 ## [0.5.1] - 2026-10-01
 
 ### 修复

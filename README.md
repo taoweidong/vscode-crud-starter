@@ -99,7 +99,7 @@ npm test          # 运行集成测试（首次会自动下载测试用 VSCode�
 ## 目录结构与架构
 
 ```
-vscode-crud-starter/
+vscode-starter-template/
 ├── package.json                  # 插件清单：命令、视图、菜单、配置（与 src/constants.ts 对应）
 ├── esbuild.js                    # 构建脚本（bundle → dist/extension.js）
 ├── media/icon.svg                # 活动栏图标
