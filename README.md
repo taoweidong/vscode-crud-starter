@@ -13,6 +13,10 @@
 | 克隆 | 右键「克隆条目」，一键复制 |
 | 其他 | 刷新列表、打开数据文件；数据文件被手工修改后自动刷新 |
 | 环境信息 | 激活时自动执行环境检测脚本（Python/Node/npm/Git/系统/VSCode），结果在侧边栏「环境信息」视图与输出通道展示，标题栏 ↻ 可重新执行 |
+| 环境初始化 | 步骤清单式页面：检查工作区 / 初始化数据文件 / 生成静态配置 / 创建产物目录 / 写入环境快照；单击执行单步，或标题栏「全部初始化」 |
+| 特性配置 | 开关列表单击即切换（删除确认 / 成功通知 / 优先级图标 / 视图徽标 / 自动刷新），全部真实影响插件行为；标题栏可打开 Schema 表单批量编辑 |
+| 静态配置 | 只读展示工作区 `.vscode/crud-starter.config.json`（环境初始化生成默认模板），文件修改后自动刷新 |
+| 分支编译 | 展示当前分支与分支清单，单击分支执行 `npm run package` 编译出包（切换分支前检查工作区干净），检测到 vsce 时输出 `.vsix` |
 
 表单面板特点：**由字段 Schema 驱动**（见 `src/webview/formSchema.ts`）、使用 VSCode 主题变量自动适配深浅色、符合 CSP 安全规范、必填校验、`Esc` 取消 / `Ctrl+Enter` 保存。
 
@@ -114,6 +118,11 @@ vscode-crud-starter/
     │   ├── itemsTreeDataProvider.ts  # 侧边栏树视图（查）
     │   ├── itemFormPanel.ts          # Webview 表单面板（增/改，单例）
     │   └── environmentTreeProvider.ts # 「环境信息」视图（启动任务结果展示）
+    ├── features/                     # 功能页面（每个目录 = 一种 UI 模式示例）
+    │   ├── init/                     #   环境初始化：清单 + 单步动作
+    │   ├── featureConfig/            #   特性配置：设置读写 + 树开关 + Schema 表单页
+    │   ├── staticConfig/             #   静态配置：只读展示 + 文件联动
+    │   └── build/                    #   分支编译出包：任务自动化 + 进度
     ├── webview/
     │   ├── formSchema.ts             # ★ 表单字段 Schema（加字段只改这里）
     │   └── formHtml.ts               #   由 Schema 渲染 CSP 合规的表单页面

@@ -8,10 +8,26 @@ import { JsonFileStore } from '../services/stores/jsonFileStore';
 import type { IItemStore } from '../services/stores/itemStore';
 import { PRIORITY_ICONS } from '../ui/icons';
 import type { TaskRunner } from '../tasks/taskRunner';
+import type { InitService } from '../features/init/initService';
+import type { BuildService } from '../features/build/buildService';
+import type { StaticConfigService } from '../features/staticConfig/staticConfigService';
+import { ConfigFormPanel } from '../features/featureConfig/configFormPanel';
+import { FEATURE_FLAGS, getFeatureValue, setFeatureValue } from '../features/featureConfig/featureFlags';
 
 // VSCode 命令参数类型在注册期未知（与官方 API 签名一致使用 any[]）
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyArgs = any[];
+
+/** 命令层依赖集合：新增页面时在此扩展，避免参数列表无限增长。 */
+export interface CommandDeps {
+  service: ItemService;
+  store: IItemStore;
+  taskRunner: TaskRunner;
+  outputChannel: vscode.OutputChannel;
+  initService: InitService;
+  staticConfig: StaticConfigService;
+  buildService: BuildService;
+}
 
 /**
  * 命令注册中心：所有命令集中在此注册，每个命令对应一种「菜单入口 + 典型场景」。
@@ -20,15 +36,17 @@ type AnyArgs = any[];
  * view/item/context 传参约定：第一个参数是被右键的树节点元素，
  * 第二个参数是当前多选集合（Ctrl/Shift+点击时非空）——批量命令依赖第二个参数。
  */
-export function registerCommands(
-  context: vscode.ExtensionContext,
-  service: ItemService,
-  store: IItemStore,
-  taskRunner: TaskRunner,
-  outputChannel: vscode.OutputChannel
-): void {
+export function registerCommands(context: vscode.ExtensionContext, deps: CommandDeps): void {
+  const { service, store, taskRunner, outputChannel, initService, staticConfig, buildService } = deps;
   const register = (commandId: string, callback: (...args: AnyArgs) => unknown): void => {
     context.subscriptions.push(vscode.commands.registerCommand(commandId, callback));
+  };
+
+  /** 成功通知统一入口：遵循「操作成功通知」特性开关。 */
+  const notify = (message: string): void => {
+    if (getFeatureValue('successNotifications')) {
+      void vscode.window.showInformationMessage(message);
+    }
   };
 
   /* ---------- 场景：常规新增 / 编辑（视图标题栏 ＋、树单击、树右键、Alt+N） ---------- */
@@ -88,11 +106,14 @@ export function registerCommands(
     if (!targets.length) {
       return;
     }
-    const confirmed = await vscode.window.showWarningMessage(
-      targets.length > 1 ? `确定删除选中的 ${targets.length} 个条目？` : `确定删除「${targets[0].name}」？`,
-      { modal: true, detail: summarize(targets) },
-      '删除'
-    );
+    // 「删除前确认」开关关闭时跳过模态确认（演示特性开关真实生效）
+    const confirmed = getFeatureValue('confirmDelete')
+      ? await vscode.window.showWarningMessage(
+          targets.length > 1 ? `确定删除选中的 ${targets.length} 个条目？` : `确定删除「${targets[0].name}」？`,
+          { modal: true, detail: summarize(targets) },
+          '删除'
+        )
+      : '删除';
     if (confirmed !== '删除') {
       return;
     }
@@ -100,7 +121,7 @@ export function registerCommands(
       for (const target of targets) {
         await service.remove(target.id);
       }
-      void vscode.window.showInformationMessage(
+      notify(
         targets.length > 1 ? `已删除 ${targets.length} 个条目。` : `已删除「${targets[0].name}」。`
       );
     } catch (err) {
@@ -130,9 +151,7 @@ export function registerCommands(
           tags: target.tags,
         });
       }
-      void vscode.window.showInformationMessage(
-        `已将 ${names(targets)} 的优先级设为「${PRIORITY_LABELS[priority]}」。`
-      );
+      notify(`已将 ${names(targets)} 的优先级设为「${PRIORITY_LABELS[priority]}」。`);
     } catch (err) {
       showError(err);
     }
@@ -149,7 +168,7 @@ export function registerCommands(
       return;
     }
     await vscode.env.clipboard.writeText(target.name);
-    void vscode.window.showInformationMessage(`已复制名称「${target.name}」。`);
+    notify(`已复制名称「${target.name}」。`);
   });
 
   register(COMMAND.copyMarkdown, async (arg?: unknown) => {
@@ -158,7 +177,7 @@ export function registerCommands(
       return;
     }
     await vscode.env.clipboard.writeText(toMarkdown(target));
-    void vscode.window.showInformationMessage('已复制为 Markdown。');
+    notify('已复制为 Markdown。');
   });
 
   register(COMMAND.copyJson, async (arg?: unknown) => {
@@ -167,7 +186,7 @@ export function registerCommands(
       return;
     }
     await vscode.env.clipboard.writeText(JSON.stringify(target, null, 2));
-    void vscode.window.showInformationMessage('已复制 JSON。');
+    notify('已复制 JSON。');
   });
 
   /* ---------- 场景：克隆 ---------- */
@@ -178,7 +197,7 @@ export function registerCommands(
     }
     try {
       const copy = await service.duplicate(target.id);
-      void vscode.window.showInformationMessage(`已克隆为「${copy.name}」。`);
+      notify(`已克隆为「${copy.name}」。`);
     } catch (err) {
       showError(err);
     }
@@ -205,7 +224,7 @@ export function registerCommands(
             break;
           case 'duplicate': {
             const copy = await service.duplicate(current.id);
-            void vscode.window.showInformationMessage(`已克隆为「${copy.name}」。`);
+    notify(`已克隆为「${copy.name}」。`);
             stayInMenu = false;
             break;
           }
@@ -220,20 +239,20 @@ export function registerCommands(
               priority,
               tags: current.tags,
             });
-            void vscode.window.showInformationMessage(`优先级已设为「${PRIORITY_LABELS[priority]}」。`);
+            notify(`优先级已设为「${PRIORITY_LABELS[priority]}」。`);
             break;
           }
           case 'copyName':
             await vscode.env.clipboard.writeText(current.name);
-            void vscode.window.showInformationMessage(`已复制名称「${current.name}」。`);
+            notify(`已复制名称「${current.name}」。`);
             break;
           case 'copyMarkdown':
             await vscode.env.clipboard.writeText(toMarkdown(current));
-            void vscode.window.showInformationMessage('已复制为 Markdown。');
+            notify('已复制为 Markdown。');
             break;
           case 'copyJson':
             await vscode.env.clipboard.writeText(JSON.stringify(current, null, 2));
-            void vscode.window.showInformationMessage('已复制 JSON。');
+            notify('已复制 JSON。');
             break;
           case 'delete': {
             const confirmed = await vscode.window.showWarningMessage(
@@ -301,6 +320,52 @@ export function registerCommands(
         '当前未打开工作区，数据保存在 VSCode 全局存储中，没有对应文件。'
       );
     }
+  });
+
+  /* ---------- 功能页面：环境初始化（清单 + 单步动作模式） ---------- */
+  register(COMMAND.runAllInit, () => {
+    void initService.runAll();
+  });
+
+  register(COMMAND.runInitStep, (stepId?: unknown) => {
+    if (typeof stepId === 'string') {
+      void initService.runStep(stepId);
+    }
+  });
+
+  /* ---------- 功能页面：特性配置（树视图开关 + Webview 配置页） ---------- */
+  register(COMMAND.openFeatureConfigPage, () => {
+    ConfigFormPanel.createOrShow();
+  });
+
+  register(COMMAND.toggleFeature, (key?: unknown) => {
+    if (typeof key !== 'string' || !FEATURE_FLAGS.some((flag) => flag.key === key)) {
+      return;
+    }
+    void setFeatureValue(key, !getFeatureValue(key));
+  });
+
+  /* ---------- 功能页面：静态配置（只读展示 + 文件联动） ---------- */
+  register(COMMAND.openStaticConfigFile, async () => {
+    if (!staticConfig.fileUri) {
+      void vscode.window.showInformationMessage('未打开工作区，静态配置不可用。');
+      return;
+    }
+    await staticConfig.ensureDefault();
+    await staticConfig.load();
+    await vscode.window.showTextDocument(staticConfig.fileUri);
+  });
+
+  /* ---------- 功能页面：分支编译出包（任务自动化模式） ---------- */
+  register(COMMAND.buildBranch, (branch?: unknown) => {
+    const target = typeof branch === 'string' && branch ? branch : undefined;
+    void buildService.build(target).then((result) => {
+      if (result.status === 'ok') {
+        notify(result.message);
+      } else if (result.status === 'error') {
+        void vscode.window.showErrorMessage(result.message);
+      }
+    });
   });
 }
 

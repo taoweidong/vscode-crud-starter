@@ -2,7 +2,7 @@
   "name": "crud-starter",
   "displayName": "CRUD Starter（界面化增删改查模板）",
   "description": "VSCode 插件初始化项目：提供界面化增删改查操作（侧边栏树视图 + Webview 表单 + 全套菜单/右键菜单示例），数据源可替换，开箱即用、易于扩展。",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "publisher": "your-publisher",
   "keywords": [
     "crud",
@@ -37,6 +37,22 @@
         {
           "id": "crudStarter.envView",
           "name": "环境信息"
+        },
+        {
+          "id": "crudStarter.initView",
+          "name": "环境初始化"
+        },
+        {
+          "id": "crudStarter.featureConfigView",
+          "name": "特性配置"
+        },
+        {
+          "id": "crudStarter.staticConfigView",
+          "name": "静态配置"
+        },
+        {
+          "id": "crudStarter.buildView",
+          "name": "分支编译"
         }
       ]
     },
@@ -147,6 +163,41 @@
         "title": "打开环境信息输出",
         "category": "CRUD Starter",
         "icon": "$(output)"
+      },
+      {
+        "command": "crudStarter.runAllInit",
+        "title": "全部初始化",
+        "category": "CRUD Starter",
+        "icon": "$(checklist)"
+      },
+      {
+        "command": "crudStarter.runInitStep",
+        "title": "执行初始化步骤",
+        "category": "CRUD Starter",
+        "icon": "$(play)"
+      },
+      {
+        "command": "crudStarter.openFeatureConfigPage",
+        "title": "打开特性配置页面",
+        "category": "CRUD Starter",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "crudStarter.toggleFeature",
+        "title": "切换特性开关",
+        "category": "CRUD Starter"
+      },
+      {
+        "command": "crudStarter.openStaticConfigFile",
+        "title": "打开静态配置文件",
+        "category": "CRUD Starter",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "command": "crudStarter.buildBranch",
+        "title": "选择分支编译出包",
+        "category": "CRUD Starter",
+        "icon": "$(package)"
       }
     ],
     "submenus": [
@@ -185,12 +236,42 @@
           "command": "crudStarter.showEnvironmentOutput",
           "when": "view == crudStarter.envView",
           "group": "navigation@2"
+        },
+        {
+          "command": "crudStarter.runAllInit",
+          "when": "view == crudStarter.initView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "crudStarter.openFeatureConfigPage",
+          "when": "view == crudStarter.featureConfigView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "crudStarter.openStaticConfigFile",
+          "when": "view == crudStarter.staticConfigView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "crudStarter.buildBranch",
+          "when": "view == crudStarter.buildView",
+          "group": "navigation@1"
         }
       ],
       "view/item/context": [
         {
           "command": "crudStarter.editItem",
           "when": "view == crudStarter.itemsView && viewItem == crudItem",
+          "group": "inline@1"
+        },
+        {
+          "command": "crudStarter.runInitStep",
+          "when": "view == crudStarter.initView && viewItem == initStep",
+          "group": "inline@1"
+        },
+        {
+          "command": "crudStarter.buildBranch",
+          "when": "view == crudStarter.buildView && viewItem == buildBranch",
           "group": "inline@1"
         },
         {
@@ -296,6 +377,31 @@
           "type": "boolean",
           "default": true,
           "description": "插件激活时自动执行启动任务（环境检测脚本）。关闭后仍可通过「环境信息」视图的刷新按钮手动执行。"
+        },
+        "crudStarter.features.confirmDelete": {
+          "type": "boolean",
+          "default": true,
+          "description": "特性开关：删除条目时弹出模态确认框，防止误删。"
+        },
+        "crudStarter.features.successNotifications": {
+          "type": "boolean",
+          "default": true,
+          "description": "特性开关：新增 / 更新 / 删除 / 克隆成功后弹出提示。"
+        },
+        "crudStarter.features.showPriorityIcons": {
+          "type": "boolean",
+          "default": true,
+          "description": "特性开关：条目列表中按优先级显示 ↑ / — / ↓ 图标。"
+        },
+        "crudStarter.features.showViewBadges": {
+          "type": "boolean",
+          "default": true,
+          "description": "特性开关：过滤时在视图标题栏显示匹配数量徽标。"
+        },
+        "crudStarter.features.autoRefreshOnExternalChange": {
+          "type": "boolean",
+          "default": true,
+          "description": "特性开关：数据文件 / 静态配置被外部修改时自动重新加载。"
         }
       }
     }

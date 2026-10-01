@@ -6,7 +6,7 @@ import { PRIORITIES, PRIORITY_LABELS } from '../models/item';
  * 想给表单加/改字段：只需修改 FORM_SCHEMA（配合 Item / ItemDraft 模型），
  * 表单 HTML、取值、回填都会自动跟随，无需改 webview 代码（详见 README「如何扩展」）。
  */
-export type FormFieldType = 'text' | 'textarea' | 'select' | 'tags';
+export type FormFieldType = 'text' | 'textarea' | 'select' | 'tags' | 'boolean';
 
 export interface FormField {
   /** 对应 ItemDraft 的字段名 */
@@ -23,6 +23,13 @@ export interface FormField {
   options?: { value: string; label: string }[];
 }
 
+/**
+ * 条目表单 Schema：界面由它驱动。
+ *
+ * 想给表单加/改字段：只需修改 FORM_SCHEMA（配合 Item / ItemDraft 模型），
+ * 表单 HTML、取值、回填都会自动跟随，无需改 webview 代码（详见 README「如何扩展」）。
+ * 同一套框架也被「特性配置」页面复用（boolean 开关字段，见 src/features/featureConfig）。
+ */
 export const FORM_SCHEMA: FormField[] = [
   {
     key: 'name',

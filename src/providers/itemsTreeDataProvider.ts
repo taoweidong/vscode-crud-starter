@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { COMMAND, VIEW } from '../constants';
+import { getFeatureValue } from '../features/featureConfig/featureFlags';
 import { Item, PRIORITY_LABELS } from '../models/item';
 import { ItemService } from '../services/itemService';
 import { PRIORITY_ICONS } from '../ui/icons';
@@ -54,7 +55,10 @@ export class ItemsTreeDataProvider implements vscode.TreeDataProvider<TreeNode> 
       ? item.tags.join(' · ')
       : firstLine(item.description);
     treeItem.tooltip = buildTooltip(item);
-    treeItem.iconPath = new vscode.ThemeIcon(PRIORITY_ICONS[item.priority]);
+    // 「显示优先级图标」开关关闭时不渲染图标
+    treeItem.iconPath = getFeatureValue('showPriorityIcons')
+      ? new vscode.ThemeIcon(PRIORITY_ICONS[item.priority])
+      : undefined;
     treeItem.contextValue = VIEW.itemContextValue;
     // 单击条目 → 打开编辑表单（界面化操作的核心入口之一）
     treeItem.command = { command: COMMAND.editItem, title: '编辑条目', arguments: [item] };

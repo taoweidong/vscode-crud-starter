@@ -1,18 +1,19 @@
 import * as vscode from 'vscode';
-import type { Item, ItemDraft } from '../models/item';
+import { isPriority, type Item, type ItemDraft, type Priority } from '../models/item';
+import { getFeatureValue } from '../features/featureConfig/featureFlags';
 import { ItemService, ItemValidationError } from '../services/itemService';
 import { renderFormHtml } from '../webview/formHtml';
-import { FORM_SCHEMA } from '../webview/formSchema';
+import { FORM_SCHEMA, type FormField } from '../webview/formSchema';
 
-/** Webview → 扩展 的消息。 */
+/** Webview → 扩展 的消息（draft 为 Schema 驱动的通用字段集）。 */
 type IncomingMessage =
   | { type: 'ready' }
   | { type: 'cancel' }
-  | { type: 'submit'; draft: ItemDraft };
+  | { type: 'submit'; draft: Record<string, unknown> };
 
 /** 扩展 → Webview 的消息。 */
 type OutgoingMessage =
-  | { type: 'init'; item: Item | Partial<ItemDraft> | null; categories: string[] }
+  | { type: 'init'; item: Item | Partial<ItemDraft> | null; categories: string[]; schema: FormField[] }
   | { type: 'error'; message: string };
 
 /**
@@ -100,6 +101,7 @@ export class ItemFormPanel {
       type: 'init',
       item: this.item ?? this.initial ?? null,
       categories,
+      schema: FORM_SCHEMA,
     } satisfies OutgoingMessage);
   }
 
@@ -113,14 +115,15 @@ export class ItemFormPanel {
         return;
       case 'submit': {
         try {
+          const draft = toItemDraft(message.draft);
           if (this.item) {
-            const updated = await this.service.update(this.item.id, message.draft);
+            const updated = await this.service.update(this.item.id, draft);
             this.panel.dispose();
-            void vscode.window.showInformationMessage(`已更新「${updated.name}」。`);
+            this.notify(`已更新「${updated.name}」。`);
           } else {
-            const created = await this.service.create(message.draft);
+            const created = await this.service.create(draft);
             this.panel.dispose();
-            void vscode.window.showInformationMessage(`已新增「${created.name}」。`);
+            this.notify(`已新增「${created.name}」。`);
           }
         } catch (err) {
           // 校验错误面板保持打开，把错误回显到表单上
@@ -136,4 +139,22 @@ export class ItemFormPanel {
       }
     }
   }
+
+  /** 操作成功通知遵循「操作成功通知」特性开关。 */
+  private notify(message: string): void {
+    if (getFeatureValue('successNotifications')) {
+      void vscode.window.showInformationMessage(message);
+    }
+  }
+}
+
+/** 泛型表单字段集 → ItemDraft（校验交给服务层）。 */
+function toItemDraft(draft: Record<string, unknown>): ItemDraft {
+  return {
+    name: String(draft.name ?? ''),
+    category: String(draft.category ?? ''),
+    description: String(draft.description ?? ''),
+    priority: (isPriority(draft.priority) ? draft.priority : 'medium') as Priority,
+    tags: Array.isArray(draft.tags) ? draft.tags.map(String) : [],
+  };
 }

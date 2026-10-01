@@ -1,4 +1,6 @@
 import * as assert from 'assert';
+import * as os from 'os';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import { type Item, type ItemDraft } from '../models/item';
 import { ItemService, ItemValidationError } from '../services/itemService';
@@ -6,6 +8,16 @@ import type { IItemStore } from '../services/stores/itemStore';
 import { environmentTask } from '../tasks/environmentTask';
 import { TaskRunner } from '../tasks/taskRunner';
 import type { StartupTask } from '../tasks/types';
+import { BuildService } from '../features/build/buildService';
+import {
+  FEATURE_FLAGS,
+  getFeatureValue,
+  setFeatureValue,
+  toFormFields,
+} from '../features/featureConfig/featureFlags';
+import { InitService } from '../features/init/initService';
+import type { InitStep } from '../features/init/initSteps';
+import { StaticConfigService } from '../features/staticConfig/staticConfigService';
 
 /** 测试用内存数据源：验证服务层逻辑，不依赖文件系统。 */
 class MemoryStore implements IItemStore {
@@ -158,5 +170,96 @@ suite('启动任务框架', () => {
     assert.match(node.description ?? '', /^v/);
     assert.ok(env.items.some((item) => item.label === 'Python'));
     assert.ok(env.items.some((item) => item.label === 'Git'));
+  });
+});
+
+suite('特性配置', () => {
+  test('开关读写走全局设置并可还原', async () => {
+    const original = getFeatureValue('confirmDelete');
+    await setFeatureValue('confirmDelete', !original);
+    assert.strictEqual(getFeatureValue('confirmDelete'), !original);
+    await setFeatureValue('confirmDelete', original);
+    assert.strictEqual(getFeatureValue('confirmDelete'), original);
+  });
+
+  test('toFormFields 生成 boolean 表单字段（供配置页面复用表单框架）', () => {
+    const fields = toFormFields();
+    assert.strictEqual(fields.length, FEATURE_FLAGS.length);
+    for (const field of fields) {
+      assert.strictEqual(field.type, 'boolean');
+      assert.ok(['true', 'false'].includes(field.defaultValue ?? ''));
+    }
+  });
+});
+
+suite('环境初始化', () => {
+  test('步骤顺序执行：失败不阻断后续步骤', async () => {
+    const steps: InitStep[] = [
+      { id: 'a', title: 'A', description: '', run: async () => 'ok-a' },
+      {
+        id: 'b',
+        title: 'B',
+        description: '',
+        run: async () => {
+          throw new Error('bad');
+        },
+      },
+      { id: 'c', title: 'C', description: '', run: async () => 'ok-c' },
+    ];
+    const output = vscode.window.createOutputChannel('CRUD Starter Test');
+    const svc = new InitService(steps, output, new StaticConfigService(output, () => undefined));
+    await svc.runAll();
+    const states = svc.getStates();
+    assert.strictEqual(states[0].status, 'done');
+    assert.strictEqual(states[0].message, 'ok-a');
+    assert.strictEqual(states[1].status, 'failed');
+    assert.strictEqual(states[1].message, 'bad');
+    assert.strictEqual(states[2].status, 'done');
+  });
+});
+
+suite('静态配置', () => {
+  test('ensureDefault 生成默认配置并可加载为分组条目', async () => {
+    const dir = path.join(os.tmpdir(), `crud-static-test-${Date.now()}`);
+    const root = vscode.Uri.file(dir);
+    const output = vscode.window.createOutputChannel('CRUD Starter Test');
+    const svc = new StaticConfigService(output, () => root);
+    assert.strictEqual(await svc.ensureDefault(), 'created');
+    assert.strictEqual(await svc.ensureDefault(), 'exists');
+    await svc.load();
+    const sections = svc.getSections();
+    assert.ok(sections.length >= 3, '应至少包含 project/build/runtime 三个分组');
+    const build = sections.find((section) => section.title === 'build');
+    assert.ok(build, '应包含 build 分组');
+    const outputDir = build.entries.find((entry) => entry.key === 'outputDir');
+    assert.strictEqual(outputDir?.value, 'dist');
+  });
+
+  test('flatten 拍平嵌套 JSON 为分组条目', () => {
+    const sections = StaticConfigService.flatten({ name: 'demo', nested: { a: 1, b: true } });
+    assert.strictEqual(sections[0].entries[0].value, 'demo');
+    const nested = sections.find((section) => section.title === 'nested');
+    assert.deepStrictEqual(
+      nested?.entries.map((entry) => entry.key),
+      ['a', 'b']
+    );
+  });
+});
+
+suite('分支编译', () => {
+  test('getGitInfo 识别当前仓库与 main 分支', async () => {
+    const output = vscode.window.createOutputChannel('CRUD Starter Test');
+    const svc = new BuildService(output, () => path.resolve(__dirname, '..', '..'));
+    const info = await svc.getGitInfo();
+    assert.strictEqual(info.available, true);
+    assert.ok(info.branches.includes('main'));
+    assert.strictEqual(info.current, 'main');
+  });
+
+  test('非 Git 目录返回 available=false 而不抛错', async () => {
+    const output = vscode.window.createOutputChannel('CRUD Starter Test');
+    const svc = new BuildService(output, () => os.tmpdir());
+    const info = await svc.getGitInfo();
+    assert.strictEqual(info.available, false);
   });
 });

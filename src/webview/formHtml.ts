@@ -26,9 +26,18 @@ function esc(value: string): string {
 
 /** 由单个字段定义渲染出表单控件。 */
 function renderField(field: FormField): string {
+  const hint = field.hint ? `<div class="hint">${esc(field.hint)}</div>` : '';
+
+  if (field.type === 'boolean') {
+    return (
+      `<div class="field field-check">` +
+      `<label class="check"><input type="checkbox" id="field-${field.key}" name="${field.key}"> ${esc(field.label)}</label>` +
+      `${hint}</div>`
+    );
+  }
+
   const requiredMark = field.required ? ' <span class="required">*</span>' : '';
   const label = `<label for="field-${field.key}">${esc(field.label)}${requiredMark}</label>`;
-  const hint = field.hint ? `<div class="hint">${esc(field.hint)}</div>` : '';
   const attrs =
     ` id="field-${field.key}" name="${field.key}"` +
     ` placeholder="${esc(field.placeholder ?? '')}"`;
@@ -58,8 +67,9 @@ function renderField(field: FormField): string {
  * 渲染表单页面。UI 风格约定（与 VSCode 原生保持一致）：
  * - 所有颜色取自 --vscode-* 主题令牌，自动适配深浅色与高对比度主题，无任何硬编码颜色；
  * - 单一字体（--vscode-font-family）、单一字阶；主按钮在右侧，与 VSCode 模态对话框一致；
- * - codicon 之外的图标一律不用；动效仅 0.1s 的 hover/focus 过渡；
  * - CSP 通过 nonce 校验，无任何外部资源；页面数据经 postMessage 传递，不做 HTML 注入。
+ *
+ * 取值 / 回填 / 必填校验全部由 init 消息携带的 schema 驱动——条目表单与特性配置页共用本渲染器。
  */
 export function renderFormHtml(webview: vscode.Webview, payload: FormRenderPayload): string {
   void webview;
@@ -104,6 +114,22 @@ export function renderFormHtml(webview: vscode.Webview, payload: FormRenderPaylo
       font-family: var(--vscode-font-family);
       font-size: var(--vscode-font-size, 13px);
       transition: border-color .1s ease, outline-color .1s ease;
+    }
+    input[type="checkbox"] {
+      width: 15px;
+      height: 15px;
+      min-height: 0;
+      padding: 0;
+      margin: 0;
+      accent-color: var(--vscode-checkbox-select-background, var(--vscode-focusBorder));
+    }
+    .field-check label.check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      margin-bottom: 0;
+      cursor: pointer;
     }
     input::placeholder, textarea::placeholder {
       color: var(--vscode-input-placeholderForeground);
@@ -191,14 +217,18 @@ export function renderFormHtml(webview: vscode.Webview, payload: FormRenderPaylo
     (function () {
       var vscode = acquireVsCodeApi();
       var categories = [];
+      var schema = [];
       var saveBtn = document.getElementById('save-btn');
-      var nameEl = document.getElementById('field-name');
 
       function escAttr(value) {
         return String(value)
           .replace(/&/g, '&amp;')
           .replace(/"/g, '&quot;')
           .replace(/</g, '&lt;');
+      }
+
+      function fieldEl(key) {
+        return document.getElementById('field-' + key);
       }
 
       function showError(message, target) {
@@ -227,24 +257,25 @@ export function renderFormHtml(webview: vscode.Webview, payload: FormRenderPaylo
           .filter(function (tag) { return tag.length > 0; });
       }
 
-      function namedFields() {
-        return Array.prototype.slice.call(document.querySelectorAll('#crud-form [name]'));
-      }
-
       function fillForm(item) {
-        namedFields().forEach(function (el) {
+        schema.forEach(function (field) {
+          var el = fieldEl(field.key);
+          if (!el) { return; }
+          var value = item ? item[field.key] : undefined;
+          if (field.type === 'boolean') {
+            el.checked = value == null ? field.defaultValue === 'true' : Boolean(value);
+            return;
+          }
           if (!item) {
             if (el.tagName === 'SELECT') {
-              el.value = el.getAttribute('data-default') || (el.options[0] ? el.options[0].value : '');
+              el.value = field.defaultValue || (el.options[0] ? el.options[0].value : '');
             } else {
               el.value = '';
             }
             return;
           }
-          var key = el.getAttribute('name');
-          var value = item[key];
           if (el.tagName === 'SELECT') {
-            el.value = value || el.getAttribute('data-default') || (el.options[0] ? el.options[0].value : '');
+            el.value = value || field.defaultValue || (el.options[0] ? el.options[0].value : '');
           } else if (Array.isArray(value)) {
             el.value = value.join(', ');
           } else {
@@ -255,17 +286,31 @@ export function renderFormHtml(webview: vscode.Webview, payload: FormRenderPaylo
       }
 
       function collectDraft() {
-        var data = { tags: '' };
-        namedFields().forEach(function (el) {
-          data[el.getAttribute('name')] = el.value;
+        var draft = {};
+        schema.forEach(function (field) {
+          var el = fieldEl(field.key);
+          if (!el) { return; }
+          if (field.type === 'boolean') {
+            draft[field.key] = el.checked;
+          } else if (field.type === 'tags') {
+            draft[field.key] = parseTags(el.value);
+          } else {
+            draft[field.key] = el.value;
+          }
         });
-        return {
-          name: (data.name || '').trim(),
-          category: (data.category || '').trim(),
-          description: data.description || '',
-          priority: data.priority || 'medium',
-          tags: parseTags(data.tags)
-        };
+        return draft;
+      }
+
+      function validateRequired(draft) {
+        for (var i = 0; i < schema.length; i++) {
+          var field = schema[i];
+          if (!field.required) { continue; }
+          var value = draft[field.key];
+          if (value == null || value === '') {
+            return field;
+          }
+        }
+        return null;
       }
 
       function fillCategories() {
@@ -278,16 +323,18 @@ export function renderFormHtml(webview: vscode.Webview, payload: FormRenderPaylo
       window.addEventListener('message', function (event) {
         var msg = event.data;
         if (msg.type === 'init') {
+          schema = msg.schema || [];
           categories = msg.categories || [];
           fillCategories();
           fillForm(msg.item);
           saveBtn.disabled = false;
-          if (nameEl) {
-            nameEl.focus();
+          var firstField = schema.length ? fieldEl(schema[0].key) : null;
+          if (firstField) {
+            firstField.focus();
           }
         } else if (msg.type === 'error') {
           saveBtn.disabled = false;
-          showError(msg.message, nameEl);
+          showError(msg.message);
         }
       });
 
@@ -295,10 +342,12 @@ export function renderFormHtml(webview: vscode.Webview, payload: FormRenderPaylo
         event.preventDefault();
         clearError();
         var draft = collectDraft();
-        if (!draft.name) {
-          showError('名称不能为空。', nameEl);
-          if (nameEl) {
-            nameEl.focus();
+        var missing = validateRequired(draft);
+        if (missing) {
+          var el = fieldEl(missing.key);
+          showError('「' + missing.label + '」不能为空。', el);
+          if (el) {
+            el.focus();
           }
           return;
         }
@@ -311,7 +360,7 @@ export function renderFormHtml(webview: vscode.Webview, payload: FormRenderPaylo
       });
 
       document.getElementById('crud-form').addEventListener('input', function (event) {
-        if (event.target === nameEl) {
+        if (event.target && event.target.classList && event.target.classList.contains('invalid')) {
           clearError();
         }
       });
