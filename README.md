@@ -79,11 +79,16 @@
 
 ```bash
 npm install
+npm run gate      # 一键式质量门禁：类型检查→生产构建→静态一致性→全量测试（推荐先跑）
 ```
 
 然后**用 VSCode 打开本项目文件夹，按 `F5`** 即可启动调试窗口：
 
-1. 活动栏出现「CRUD Starter」图标，点击进入侧边栏；
+> AI 编码代理请先阅读根目录的 `agent.md`——其中包含每次对话结束前必须执行质量门禁的强制协议。
+
+调试窗口中的体验路径：
+
+1. 活动栏出现「CRUD Starter」图标，点击进入侧边栏（共 6 个视图）；
 2. 点击标题栏 ＋ 新增条目，体验表单界面；
 3. 数据默认保存在工作区的 `.vscode/crud-starter-items.json`（路径可用设置 `crudStarter.storagePath` 修改）。
 
@@ -93,7 +98,7 @@ npm install
 npm run compile   # 类型检查 + esbuild 打包到 dist/
 npm run watch     # 监听模式（调试时配合使用）
 npm run package   # 生产构建（供打包发布用）
-npm test          # 运行集成测试（首次会自动下载测试用 VSCode，耗时较长）
+npm test          # 仅运行集成测试（首次会自动下载测试用 VSCode，耗时较长）
 ```
 
 ## 目录结构与架构

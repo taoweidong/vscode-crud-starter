@@ -5,7 +5,12 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { type Item, type ItemDraft } from '../models/item';
 import { ItemService, ItemValidationError } from '../services/itemService';
+import { JsonFileStore } from '../services/stores/jsonFileStore';
+import { MementoStore } from '../services/stores/mementoStore';
 import type { IItemStore } from '../services/stores/itemStore';
+import { ItemsTreeDataProvider } from '../providers/itemsTreeDataProvider';
+import { renderFormHtml } from '../webview/formHtml';
+import { FORM_SCHEMA } from '../webview/formSchema';
 import { environmentTask } from '../tasks/environmentTask';
 import { TaskRunner } from '../tasks/taskRunner';
 import type { StartupTask } from '../tasks/types';
@@ -267,5 +272,144 @@ suite('分支编译', () => {
     const svc = new BuildService(output, () => os.tmpdir());
     const info = await svc.getGitInfo();
     assert.strictEqual(info.available, false);
+  });
+});
+
+suite('JsonFileStore', () => {
+  function sampleItem(id: string, name: string): Item {
+    return {
+      id,
+      name,
+      category: '测试',
+      description: '',
+      priority: 'medium',
+      tags: ['t'],
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+  }
+
+  test('文件不存在返回空数组；save→load 往返一致', async () => {
+    const dir = path.join(os.tmpdir(), `crud-store-test-${Date.now()}`);
+    const store = new JsonFileStore(vscode.Uri.file(path.join(dir, 'data', 'items.json')));
+    try {
+      assert.deepStrictEqual(await store.load(), []);
+      const items = [sampleItem('1', '甲'), sampleItem('2', '乙')];
+      await store.save(items);
+      assert.deepStrictEqual(await store.load(), items);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test('文件损坏时备份原文件并从空数据开始', async () => {
+    const dir = path.join(os.tmpdir(), `crud-store-corrupt-${Date.now()}`);
+    const fileUri = vscode.Uri.file(path.join(dir, 'items.json'));
+    await vscode.workspace.fs.createDirectory(vscode.Uri.joinPath(fileUri, '..'));
+    await vscode.workspace.fs.writeFile(fileUri, Buffer.from('{corrupt', 'utf8'));
+    try {
+      const store = new JsonFileStore(fileUri);
+      assert.deepStrictEqual(await store.load(), []);
+      const entries = await vscode.workspace.fs.readDirectory(vscode.Uri.joinPath(fileUri, '..'));
+      assert.ok(entries.some(([name]) => name.endsWith('.bak')), '应生成损坏备份文件');
+      assert.ok(!entries.some(([name]) => name === 'items.json'), '原损坏文件应已移走');
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+suite('MementoStore', () => {
+  test('读写往返（模拟 Memento）', async () => {
+    const backing = new Map<string, unknown>();
+    const memento = {
+      get: (key: string, defaultValue?: unknown) =>
+        backing.has(key) ? backing.get(key) : defaultValue,
+      update: async (key: string, value: unknown) => {
+        backing.set(key, value);
+      },
+    } as unknown as vscode.Memento;
+    const store = new MementoStore(memento, 'test.key');
+    assert.deepStrictEqual(await store.load(), []);
+    await store.save([
+      {
+        id: '1',
+        name: '甲',
+        category: '',
+        description: '',
+        priority: 'low',
+        tags: [],
+        createdAt: '',
+        updatedAt: '',
+      },
+    ]);
+    assert.strictEqual((await store.load()).length, 1);
+  });
+});
+
+suite('条目树视图', () => {
+  test('按分类分组，子节点归属正确', async () => {
+    const service = new ItemService(new MemoryStore());
+    await service.create(draft('甲', { category: '工作' }));
+    await service.create(draft('乙', { category: '工作' }));
+    await service.create(draft('丙', { category: '生活' }));
+    const provider = new ItemsTreeDataProvider(service);
+
+    const roots = await provider.getChildren();
+    const work = roots.find((node) => node.kind === 'category' && node.label === '工作');
+    assert.ok(work && work.kind === 'category' && work.count === 2, '「工作」分组应有 2 项');
+    const life = roots.find((node) => node.kind === 'category' && node.label === '生活');
+    assert.ok(life && life.kind === 'category' && life.count === 1);
+
+    const children = await provider.getChildren({ kind: 'category', label: '工作', count: 2 });
+    assert.strictEqual(children.length, 2);
+    assert.ok(children.every((node) => node.kind === 'item'));
+    assert.deepStrictEqual(
+      children.map((node) => (node.kind === 'item' ? node.item.name : '')),
+      ['甲', '乙']
+    );
+  });
+
+  test('过滤生效时平铺展示匹配项', async () => {
+    const service = new ItemService(new MemoryStore());
+    await service.create(draft('前端重构', { tags: ['web'] }));
+    await service.create(draft('后端接口', { tags: ['api'] }));
+    service.setFilter('api');
+    const provider = new ItemsTreeDataProvider(service);
+    const roots = await provider.getChildren();
+    assert.strictEqual(roots.length, 1);
+    assert.ok(roots[0].kind === 'item' && roots[0].item.name === '后端接口');
+    assert.ok(service.filtered);
+  });
+});
+
+suite('表单渲染器', () => {
+  test('条目 Schema：CSP nonce / 必填标记 / datalist 声明化渲染', () => {
+    const html = renderFormHtml({ title: '新增条目', schema: FORM_SCHEMA });
+    assert.ok(html.includes("script-src 'nonce-"), 'script nonce 缺失');
+    assert.ok(html.includes("style-src 'nonce-"), 'style nonce 缺失');
+    assert.ok(html.includes('list="category-list"'), 'datalist 应由 Schema 的 datalist 属性渲染');
+    assert.ok(html.includes('class="required"'), '必填标记缺失');
+    assert.ok(!html.includes('${'), '存在未解析插值');
+    assert.ok(html.includes('<form id="crud-form" novalidate>'), '缺少 novalidate');
+  });
+
+  test('boolean 开关字段渲染（特性配置页复用）', () => {
+    const fields = toFormFields();
+    const html = renderFormHtml({ title: '特性配置', schema: fields });
+    for (const field of fields) {
+      assert.ok(html.includes(`type="checkbox" id="field-${field.key}"`), `开关缺失: ${field.key}`);
+    }
+    assert.ok(html.includes('schema = msg.schema || []'), 'schema 应由 init 消息驱动');
+  });
+});
+
+suite('分支编译（补充）', () => {
+  test('未打开工作区时返回 error 结果而不抛错', async () => {
+    const output = vscode.window.createOutputChannel('CRUD Starter Test');
+    const svc = new BuildService(output, () => undefined);
+    const result = await svc.build();
+    assert.strictEqual(result.status, 'error');
+    assert.match(result.message, /未打开工作区/);
   });
 });

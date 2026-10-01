@@ -4,6 +4,19 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.6.0] - 2026-10-01
+
+### 新增
+
+- **一键式质量门禁**：`npm run gate` 依次执行类型检查 → 生产构建 → 测试编译 →
+  静态一致性检查（package.json 清单 ↔ constants ↔ 视图 when ↔ 表单渲染运行时验证，
+  内嵌于 `scripts/gate.js`）→ 全量单元测试，任一步失败即非零退出并输出失败详情。
+- **agent.md**：AI 编码代理强制约定——每次对话结束前必须执行 `npm run gate` 并全部通过后
+  才能提交推送；含架构分层、单一来源、Schema 驱动、UI 规约等硬性条目。
+- **单元测试 18 → 26**：新增 JsonFileStore（空文件 / 往返 / 损坏自动备份）、MementoStore、
+  条目树视图（分类分组 / 过滤平铺）、表单渲染器（CSP / datalist / boolean 开关）、
+  分支编译服务（未打开工作区路径）。
+
 ## [0.5.2] - 2026-10-01
 
 ### 变更
