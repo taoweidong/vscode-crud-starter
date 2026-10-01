@@ -69,7 +69,7 @@ export class ItemFormPanel {
   /** 标题 / 副标题 / 页面随模式（新增、预填新增、编辑）保持一致。 */
   private render(): void {
     this.panel.title = this.item ? '编辑条目' : '新增条目';
-    this.panel.webview.html = renderFormHtml(this.panel.webview, {
+    this.panel.webview.html = renderFormHtml({
       title: this.panel.title,
       subtitle: this.item
         ? '修改字段后点击「保存」即可更新该条目。'

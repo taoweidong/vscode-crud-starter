@@ -1,5 +1,4 @@
 import { randomBytes } from 'crypto';
-import * as vscode from 'vscode';
 import type { FormField } from './formSchema';
 
 export interface FormRenderPayload {
@@ -57,7 +56,7 @@ function renderField(field: FormField): string {
     default:
       control =
         `<input${attrs} type="text" autocomplete="off"${field.required ? ' required' : ''}` +
-        `${field.key === 'category' ? ' list="category-list"' : ''}>`;
+        `${field.datalist ? ` list="${esc(field.datalist)}"` : ''}>`;
   }
 
   return `<div class="field">${label}${control}${hint}</div>`;
@@ -71,8 +70,7 @@ function renderField(field: FormField): string {
  *
  * 取值 / 回填 / 必填校验全部由 init 消息携带的 schema 驱动——条目表单与特性配置页共用本渲染器。
  */
-export function renderFormHtml(webview: vscode.Webview, payload: FormRenderPayload): string {
-  void webview;
+export function renderFormHtml(payload: FormRenderPayload): string {
   const nonce = getNonce();
   const fields = payload.schema.map(renderField).join('\n      ');
 

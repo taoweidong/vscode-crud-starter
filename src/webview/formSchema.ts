@@ -21,6 +21,8 @@ export interface FormField {
   defaultValue?: string;
   /** select 类型的选项 */
   options?: { value: string; label: string }[];
+  /** 输入建议列表的 datalist 元素 id（text 输入的自动补全提示） */
+  datalist?: string;
 }
 
 /**
@@ -44,6 +46,7 @@ export const FORM_SCHEMA: FormField[] = [
     type: 'text',
     placeholder: '例如：需求 / 任务 / 笔记（留空归入“未分类”）',
     hint: '输入时会自动提示已有分类',
+    datalist: 'category-list',
   },
   {
     key: 'priority',

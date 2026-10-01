@@ -27,7 +27,7 @@ export class ConfigFormPanel {
   private disposables: vscode.Disposable[] = [];
 
   private constructor(private readonly panel: vscode.WebviewPanel) {
-    this.panel.webview.html = renderFormHtml(this.panel.webview, {
+    this.panel.webview.html = renderFormHtml({
       title: '特性配置',
       subtitle: '开关保存后立即写入 VSCode 设置（crudStarter.features.*），并实时影响插件行为。',
       schema: toFormFields(),

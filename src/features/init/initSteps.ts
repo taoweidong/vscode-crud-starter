@@ -1,6 +1,14 @@
 import * as vscode from 'vscode';
+import { CONFIG, STORAGE } from '../../constants';
 import { environmentTask } from '../../tasks/environmentTask';
 import { StaticConfigService } from '../staticConfig/staticConfigService';
+
+/** 数据文件相对路径：跟随 crudStarter.storagePath 配置，与 JsonFileStore 保持一致。 */
+function getDataFileRelativePath(): string {
+  return vscode.workspace
+    .getConfiguration(CONFIG.section)
+    .get<string>(CONFIG.storagePath, STORAGE.defaultFileName);
+}
 
 /** 初始化步骤的执行上下文。 */
 export interface InitContext {
@@ -46,21 +54,19 @@ export function createInitSteps(): InitStep[] {
     {
       id: 'dataFile',
       title: '初始化数据文件',
-      description: '确保 .vscode/crud-starter-items.json 存在（不存在则创建空数据）',
+      description: '确保数据文件存在（路径跟随 crudStarter.storagePath 配置，不存在则创建空数据）',
       async run(ctx) {
         if (!ctx.workspaceRoot) {
           throw new Error('未打开工作区。');
         }
-        const fileUri = vscode.Uri.joinPath(
-          ctx.workspaceRoot,
-          '.vscode/crud-starter-items.json'
-        );
+        const relative = getDataFileRelativePath();
+        const fileUri = vscode.Uri.joinPath(ctx.workspaceRoot, relative);
         if (await pathExists(fileUri)) {
           return '数据文件已存在，跳过创建。';
         }
         await vscode.workspace.fs.createDirectory(vscode.Uri.joinPath(fileUri, '..'));
         await vscode.workspace.fs.writeFile(fileUri, Buffer.from('[]', 'utf8'));
-        return `已创建：${fileUri.fsPath}`;
+        return `已创建：${relative}`;
       },
     },
     {

@@ -481,13 +481,16 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
   /* ---------- 功能页面：分支编译出包（任务自动化模式） ---------- */
   register(COMMAND.buildBranch, (branch?: unknown) => {
     const target = typeof branch === 'string' && branch ? branch : undefined;
-    void buildService.build(target).then((result) => {
-      if (result.status === 'ok') {
-        notify(result.message);
-      } else if (result.status === 'error') {
-        void vscode.window.showErrorMessage(result.message);
-      }
-    });
+    void buildService
+      .build(target)
+      .then((result) => {
+        if (result.status === 'ok') {
+          notify(result.message);
+        } else if (result.status === 'error') {
+          void vscode.window.showErrorMessage(result.message);
+        }
+      })
+      .catch((err) => showError(err));
   });
 }
 

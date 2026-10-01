@@ -19,6 +19,10 @@ export interface BuildResult {
 }
 
 const EXEC_TIMEOUT_MS = 300000;
+/** GitInfo 缓存有效期：树视图刷新频繁，避免每次 spawn 两个 git 进程 */
+const GIT_CACHE_TTL_MS = 5000;
+/** 分支名合法性：防注入（分支名最终会进入 shell 命令） */
+const BRANCH_NAME_PATTERN = /^[\w.\-/]+$/;
 
 /** 执行 shell 命令：成功返回 stdout，失败抛出含 stderr 摘要的错误。 */
 function run(command: string, cwd: string, timeoutMs = EXEC_TIMEOUT_MS): Promise<string> {
@@ -45,6 +49,7 @@ function run(command: string, cwd: string, timeoutMs = EXEC_TIMEOUT_MS): Promise
  */
 export class BuildService implements vscode.Disposable {
   private lastBuild: BuildResult | undefined;
+  private gitCache: { info: GitInfo; at: number } | undefined;
 
   private readonly _onDidChangeItems = new vscode.EventEmitter<void>();
   readonly onDidChangeItems = this._onDidChangeItems.event;
@@ -58,22 +63,31 @@ export class BuildService implements vscode.Disposable {
     return this.lastBuild;
   }
 
-  /** 读取当前分支与分支列表（非 Git 仓库时 available=false，不抛错）。 */
-  async getGitInfo(): Promise<GitInfo> {
+  /** 读取当前分支与分支列表（非 Git 仓库时 available=false，不抛错）。
+   * 结果带 5 秒 TTL 缓存，避免树视图频繁刷新时反复 spawn git 进程；build 等需要最新状态时传 force。 */
+  async getGitInfo(force = false): Promise<GitInfo> {
+    const now = Date.now();
+    if (!force && this.gitCache && now - this.gitCache.at < GIT_CACHE_TTL_MS) {
+      return this.gitCache.info;
+    }
     const cwd = this.getCwd();
+    let info: GitInfo;
     if (!cwd) {
-      return { available: false, branches: [] };
+      info = { available: false, branches: [] };
+    } else {
+      try {
+        const current = (await run('git rev-parse --abbrev-ref HEAD', cwd, 10000)).trim();
+        const branches = (await run('git branch --format=%(refname:short)', cwd, 10000))
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter(Boolean);
+        info = { available: true, current, branches };
+      } catch {
+        info = { available: false, branches: [] };
+      }
     }
-    try {
-      const current = (await run('git rev-parse --abbrev-ref HEAD', cwd, 10000)).trim();
-      const branches = (await run('git branch --format=%(refname:short)', cwd, 10000))
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean);
-      return { available: true, current, branches };
-    } catch {
-      return { available: false, branches: [] };
-    }
+    this.gitCache = { info, at: now };
+    return info;
   }
 
   /** 编译出包。传入 branch 且与当前分支不同时，会先校验工作区干净再切换。 */
@@ -100,12 +114,15 @@ export class BuildService implements vscode.Disposable {
     this.output.appendLine(`[编译] 开始（分支：${branch ?? '当前'}）…`);
 
     // ---- Git 检查与分支切换 ----
-    const git = await this.getGitInfo();
+    const git = await this.getGitInfo(true);
     if (!git.available) {
       return fail('error', '当前工作区不是 Git 仓库，无法获取分支信息。');
     }
     const target = branch || git.current;
     if (branch && branch !== git.current) {
+      if (!BRANCH_NAME_PATTERN.test(branch)) {
+        return fail('error', `分支名不合法（仅允许字母/数字/._-/）：${branch}`);
+      }
       const dirty = (await run('git status --porcelain', cwd, 10000)).trim();
       if (dirty) {
         return fail(
@@ -113,7 +130,14 @@ export class BuildService implements vscode.Disposable {
           '存在未提交的修改，切换分支前请先提交或 stash（git status 非空）。'
         );
       }
-      await run(`git checkout ${branch}`, cwd, 60000);
+      try {
+        await run(`git checkout "${branch}"`, cwd, 60000);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        this.output.appendLine(`[编译] 切换分支失败：${message}`);
+        return fail('error', `切换分支到「${branch}」失败，详见输出通道。`);
+      }
+      this.gitCache = undefined; // 分支已变化，失效缓存
       this.output.appendLine(`[编译] 已切换分支：${git.current} → ${branch}`);
     }
 

@@ -4,6 +4,24 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.5.1] - 2026-10-01
+
+### 修复
+
+- 分支编译：`git checkout` 失败不再产生未处理的 Promise 拒绝（改为记录为编译失败结果）；
+  分支名增加合法性校验（防注入）并在命令中加引号；命令层补充 `.catch` 兜底。
+- 环境初始化：数据文件路径改为跟随 `crudStarter.storagePath` 配置，
+  修复用户自定义存储路径后初始化会在默认位置创建错误文件的问题。
+
+### 优化
+
+- 表单渲染器去除业务特例：`datalist` 由 Schema 字段声明（`FormField.datalist`），
+  渲染器不再感知具体字段；移除未使用的 webview 参数，签名简化为 `renderFormHtml(payload)`。
+- 分支编译视图的 Git 信息增加 5 秒 TTL 缓存，频繁刷新不再反复 spawn git 进程。
+- 集成测试清理自身产生的临时目录，不再向系统 Temp 残留 `crud-static-test-*`。
+- 工程配置：tsconfig 增加 `noFallthroughCasesInSwitch`；package.json 补充 `repository`；
+  `.gitignore` 增加 `.crud-starter/`。
+
 ## [0.5.0] - 2026-10-01
 
 ### 新增

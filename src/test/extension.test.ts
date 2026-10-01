@@ -1,4 +1,5 @@
 import * as assert from 'assert';
+import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
@@ -224,15 +225,20 @@ suite('静态配置', () => {
     const root = vscode.Uri.file(dir);
     const output = vscode.window.createOutputChannel('CRUD Starter Test');
     const svc = new StaticConfigService(output, () => root);
-    assert.strictEqual(await svc.ensureDefault(), 'created');
-    assert.strictEqual(await svc.ensureDefault(), 'exists');
-    await svc.load();
-    const sections = svc.getSections();
-    assert.ok(sections.length >= 3, '应至少包含 project/build/runtime 三个分组');
-    const build = sections.find((section) => section.title === 'build');
-    assert.ok(build, '应包含 build 分组');
-    const outputDir = build.entries.find((entry) => entry.key === 'outputDir');
-    assert.strictEqual(outputDir?.value, 'dist');
+    try {
+      assert.strictEqual(await svc.ensureDefault(), 'created');
+      assert.strictEqual(await svc.ensureDefault(), 'exists');
+      await svc.load();
+      const sections = svc.getSections();
+      assert.ok(sections.length >= 3, '应至少包含 project/build/runtime 三个分组');
+      const build = sections.find((section) => section.title === 'build');
+      assert.ok(build, '应包含 build 分组');
+      const outputDir = build.entries.find((entry) => entry.key === 'outputDir');
+      assert.strictEqual(outputDir?.value, 'dist');
+    } finally {
+      // 清理临时目录，避免多次运行测试后残留
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   test('flatten 拍平嵌套 JSON 为分组条目', () => {
