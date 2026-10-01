@@ -2,7 +2,7 @@
   "name": "crud-starter",
   "displayName": "CRUD Starter（界面化增删改查模板）",
   "description": "VSCode 插件初始化项目：提供界面化增删改查操作（侧边栏树视图 + Webview 表单 + 全套菜单/右键菜单示例），数据源可替换，开箱即用、易于扩展。",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "publisher": "your-publisher",
   "keywords": [
     "crud",
@@ -107,6 +107,36 @@
       {
         "command": "crudStarter.newItemFromFile",
         "title": "将文件添加为条目",
+        "category": "CRUD Starter",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "crudStarter.newItemFromFilePreview",
+        "title": "登记文件并摘录内容",
+        "category": "CRUD Starter",
+        "icon": "$(markdown)"
+      },
+      {
+        "command": "crudStarter.newItemsFromFolder",
+        "title": "将文件夹内容登记为条目",
+        "category": "CRUD Starter",
+        "icon": "$(folder-library)"
+      },
+      {
+        "command": "crudStarter.quickAddFromSelection",
+        "title": "从选中文本快速新增条目",
+        "category": "CRUD Starter",
+        "icon": "$(zap)"
+      },
+      {
+        "command": "crudStarter.appendSelectionToItem",
+        "title": "将选中内容追加到条目",
+        "category": "CRUD Starter",
+        "icon": "$(add)"
+      },
+      {
+        "command": "crudStarter.addCurrentFileToItems",
+        "title": "登记当前文件为条目",
         "category": "CRUD Starter",
         "icon": "$(new-file)"
       },
@@ -338,12 +368,35 @@
           "command": "crudStarter.newItemFromSelection",
           "when": "editorTextFocus && editorHasSelection",
           "group": "9_crudstarter@1"
+        },
+        {
+          "command": "crudStarter.quickAddFromSelection",
+          "when": "editorTextFocus && editorHasSelection",
+          "group": "9_crudstarter@2"
+        },
+        {
+          "command": "crudStarter.appendSelectionToItem",
+          "when": "editorTextFocus && editorHasSelection",
+          "group": "9_crudstarter@3"
+        },
+        {
+          "command": "crudStarter.addCurrentFileToItems",
+          "when": "editorIsOpen && !editorHasSelection",
+          "group": "9_crudstarter@4"
         }
       ],
       "explorer/context": [
         {
           "command": "crudStarter.newItemFromFile",
           "group": "9_crudstarter@1"
+        },
+        {
+          "command": "crudStarter.newItemFromFilePreview",
+          "group": "9_crudstarter@2"
+        },
+        {
+          "command": "crudStarter.newItemsFromFolder",
+          "group": "9_crudstarter@3"
         }
       ],
       "editor/title": [

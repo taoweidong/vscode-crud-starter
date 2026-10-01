@@ -31,8 +31,8 @@
 | 子菜单「设置优先级」 | 树条目右键 → 设置优先级 → 高/中/低 | 多选条目后一键统一优先级 | `setPriorityHigh/Medium/Low` |
 | 子菜单「复制…」 | 树条目右键 → 复制… | 把条目复制成 名称 / Markdown / JSON，粘贴进周报或 issue | `copyName` `copyMarkdown` `copyJson` |
 | 动态菜单「更多操作…」 | 树条目右键 → 更多操作… | 用 QuickPick 实现的**可编程菜单**：菜单项可随数据动态增减，操作后菜单保持打开，`Esc` 退出 | `moreActions` |
-| 编辑器右键菜单 | 编辑器中选中一段文本 → 右键 → 「从选中文本新增条目」 | 把选中的 TODO、报错信息、需求描述一键变条目，表单自动预填（标题取首行，描述存全文） | `newItemFromSelection` |
-| 资源管理器右键菜单 | 左侧文件树右键任意文件/文件夹 → 「将文件添加为条目」 | 把待重构/待评审的文件登记成条目，描述记录完整路径 | `newItemFromFile` |
+| 编辑器右键菜单 | 选中一段文本 → 右键（多条目：新增条目 / 快速新增 / 追加到条目）；无选区时右键显示「登记当前文件」 | 选中 TODO 一键变条目；连续登记多条跳过表单；给已有条目补充线索；登记当前文件 | `newItemFromSelection` `quickAddFromSelection` `appendSelectionToItem` `addCurrentFileToItems` |
+| 资源管理器右键菜单 | 右键文件：添加为条目 / 登记并摘录内容（前 20 行进描述）；右键文件夹：内容批量登记（上限 50 个） | 待重构文件登记、配置文件连内容一起留档、整个目录批量导入 | `newItemFromFile` `newItemFromFilePreview` `newItemsFromFolder` |
 | 编辑器标题栏 | 打开的文件页签右上角图标按钮 | 对当前打开的文件做同样的登记 | `newItemFromFile` |
 | 命令面板 | `Ctrl+Shift+P` 输入 "CRUD Starter" | 无鼠标操作路径；未传参的命令会用 QuickPick 让你先选条目 | 全部命令 |
 | 快捷键 | `Alt+N` 新增；选中文本后 `Alt+S` 快速入条目 | 键盘党快速入口（可在键盘快捷方式中修改/移除） | `newItem` `newItemFromSelection` |

@@ -34,6 +34,16 @@ export const COMMAND = {
   newItemFromSelection: 'crudStarter.newItemFromSelection',
   /** 资源管理器右键 / 编辑器标题栏：从文件新增 */
   newItemFromFile: 'crudStarter.newItemFromFile',
+  /** 编辑器右键：从选中文本快速新增（跳过表单，静默创建） */
+  quickAddFromSelection: 'crudStarter.quickAddFromSelection',
+  /** 编辑器右键：将选中内容追加到已有条目 */
+  appendSelectionToItem: 'crudStarter.appendSelectionToItem',
+  /** 编辑器右键：登记当前打开的文件 */
+  addCurrentFileToItems: 'crudStarter.addCurrentFileToItems',
+  /** 资源管理器右键：将文件夹内容批量登记为条目 */
+  newItemsFromFolder: 'crudStarter.newItemsFromFolder',
+  /** 资源管理器右键：登记文件并摘录内容预览 */
+  newItemFromFilePreview: 'crudStarter.newItemFromFilePreview',
   /** 树条目右键 → 设置优先级（子菜单） */
   setPriorityHigh: 'crudStarter.setPriorityHigh',
   setPriorityMedium: 'crudStarter.setPriorityMedium',

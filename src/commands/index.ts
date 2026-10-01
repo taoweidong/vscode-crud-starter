@@ -86,12 +86,134 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Command
       void vscode.window.showInformationMessage('未找到可用的文件：请在资源管理器中右键文件，或先打开一个文件。');
       return;
     }
-    ItemFormPanel.createOrShow(service, undefined, {
-      name: path.basename(target.fsPath),
-      category: '文件',
-      description: target.fsPath,
-      tags: ['文件'],
-    });
+    openFileForm(service, target);
+  });
+
+  /* ---------- 场景：登记文件并摘录内容（资源管理器右键） ----------
+     典型场景：登记配置文件/脚本时，把前 20 行内容一并带进描述，方便日后回看 */
+  register(COMMAND.newItemFromFilePreview, async (uri?: vscode.Uri) => {
+    if (!uri) {
+      void vscode.window.showInformationMessage('请在资源管理器中右键一个文件。');
+      return;
+    }
+    try {
+      const raw = await vscode.workspace.fs.readFile(uri);
+      const preview = Buffer.from(raw)
+        .toString('utf8')
+        .split(/\r?\n/)
+        .slice(0, 20)
+        .join('\n');
+      ItemFormPanel.createOrShow(service, undefined, {
+        name: path.basename(uri.fsPath),
+        category: '文件',
+        description: `${uri.fsPath}\n\n—— 内容预览（前 20 行）——\n${preview}`,
+        tags: ['文件', '含内容'],
+      });
+    } catch (err) {
+      showError(err);
+    }
+  });
+
+  /* ---------- 场景：文件夹批量登记（资源管理器右键） ----------
+     典型场景：把一个目录下的所有文件各登记为一条（如待迁移模块），静默创建不弹表单 */
+  register(COMMAND.newItemsFromFolder, async (uri?: vscode.Uri) => {
+    if (!uri) {
+      void vscode.window.showInformationMessage('请在资源管理器中右键一个文件夹。');
+      return;
+    }
+    try {
+      const entries = await vscode.workspace.fs.readDirectory(uri);
+      const files = entries
+        .filter(([, fileType]) => fileType === vscode.FileType.File)
+        .map(([name]) => name);
+      if (!files.length) {
+        void vscode.window.showInformationMessage('该文件夹下没有文件。');
+        return;
+      }
+      const limited = files.slice(0, 50); // 批量上限，防止误操作生成海量条目
+      let created = 0;
+      for (const name of limited) {
+        await service.create({
+          name,
+          category: '文件',
+          description: vscode.Uri.joinPath(uri, name).fsPath,
+          priority: 'medium',
+          tags: ['文件', '批量'],
+        });
+        created++;
+      }
+      notify(
+        files.length > limited.length
+          ? `已登记 ${created} 个文件（超过 50 个的部分未处理）。`
+          : `已登记 ${created} 个文件为条目。`
+      );
+    } catch (err) {
+      showError(err);
+    }
+  });
+
+  /* ---------- 场景：从选中文本快速新增（编辑器右键） ----------
+     与「从选中文本新增条目」的区别：跳过表单静默创建，适合一口气登记多条 */
+  register(COMMAND.quickAddFromSelection, async () => {
+    const editor = vscode.window.activeTextEditor;
+    const text = editor ? editor.document.getText(editor.selection).trim() : '';
+    if (!text) {
+      void vscode.window.showInformationMessage('请先在编辑器中选中一段文本，再运行本命令。');
+      return;
+    }
+    try {
+      const created = await service.create({
+        name: text.split(/\r?\n/)[0].slice(0, 50),
+        category: '来自编辑器',
+        description: text,
+        priority: 'medium',
+        tags: ['选区', '快速'],
+      });
+      notify(`已快速登记「${created.name}」。`);
+    } catch (err) {
+      showError(err);
+    }
+  });
+
+  /* ---------- 场景：选中内容追加到已有条目（编辑器右键） ----------
+     典型场景：条目已存在，后续在代码里看到相关线索，选中右键直接补进描述 */
+  register(COMMAND.appendSelectionToItem, async () => {
+    const editor = vscode.window.activeTextEditor;
+    const text = editor ? editor.document.getText(editor.selection).trim() : '';
+    if (!text) {
+      void vscode.window.showInformationMessage('请先在编辑器中选中一段文本，再运行本命令。');
+      return;
+    }
+    const target = await pickItem(service, '选择要追加内容的条目');
+    if (!target) {
+      return;
+    }
+    try {
+      const stamp = new Date().toLocaleString();
+      const description = target.description
+        ? `${target.description}\n\n—— 追加于 ${stamp} ——\n${text}`
+        : text;
+      await service.update(target.id, {
+        name: target.name,
+        category: target.category,
+        description,
+        priority: target.priority,
+        tags: target.tags,
+      });
+      notify(`已将选中内容追加到「${target.name}」。`);
+    } catch (err) {
+      showError(err);
+    }
+  });
+
+  /* ---------- 场景：登记当前文件（编辑器内容右键，无选区时出现） ---------- */
+  register(COMMAND.addCurrentFileToItems, () => {
+    const uri = vscode.window.activeTextEditor?.document.uri;
+    if (!uri) {
+      void vscode.window.showInformationMessage('当前没有打开的文件。');
+      return;
+    }
+    openFileForm(service, uri);
   });
 
   /* ---------- 场景：删除（树右键，支持 Ctrl/Shift 多选批量删除） ---------- */
@@ -457,6 +579,16 @@ function summarize(items: Item[]): string | undefined {
 function names(items: Item[]): string {
   const labels = items.slice(0, 3).map((item) => `「${item.name}」`);
   return items.length <= 3 ? labels.join('、') : `${labels.join('、')} 等 ${items.length} 个`;
+}
+
+/** 打开「文件登记」表单（资源管理器右键 / 编辑器右键 / 编辑器标题栏共用）。 */
+function openFileForm(service: ItemService, uri: vscode.Uri): void {
+  ItemFormPanel.createOrShow(service, undefined, {
+    name: path.basename(uri.fsPath),
+    category: '文件',
+    description: uri.fsPath,
+    tags: ['文件'],
+  });
 }
 
 /** 未带参数调用时（如从命令面板触发），用 QuickPick 让用户选择一个条目。 */
