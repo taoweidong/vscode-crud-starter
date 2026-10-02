@@ -2,7 +2,7 @@
   "name": "vscode-starter-template",
   "displayName": "CRUD Starter（界面化增删改查模板）",
   "description": "VSCode 插件初始化项目：提供界面化增删改查操作（侧边栏树视图 + Webview 表单 + 全套菜单/右键菜单示例），数据源可替换，开箱即用、易于扩展。",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "publisher": "your-publisher",
   "repository": {
     "type": "git",

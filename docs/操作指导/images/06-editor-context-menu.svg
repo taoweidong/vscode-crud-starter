@@ -1,0 +1,59 @@
+<svg width="900" height="560" viewBox="0 0 900 560" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="900" height="560" rx="8" fill="#3c3c3c"/>
+  <rect width="900" height="34" rx="8" fill="#3c3c3c"/>
+  <text x="450" y="22" fill="#cccccc" font-size="13" text-anchor="middle">编辑器内容右键 — 选中代码后可用的 CRUD 入口</text>
+
+  <rect y="34" width="52" height="526" fill="#333333"/>
+  <rect x="52" y="34" width="200" height="526" fill="#252526"/>
+  <g font-size="12" fill="#c5c5c5">
+    <text x="66" y="60" fill="#e7e7e7" font-weight="bold">大纲</text>
+    <text x="66" y="88">▼ 📁 src</text>
+    <text x="86" y="112" fill="#9cdcfe">auth.service.ts</text>
+    <text x="86" y="136" fill="#9cdcfe">login.controller.ts</text>
+    <text x="86" y="160" fill="#9cdcfe">user.model.ts</text>
+  </g>
+
+  <rect x="252" y="34" width="648" height="492" fill="#1e1e1e"/>
+  <g font-family="Consolas, monospace" font-size="13">
+    <text x="270" y="70" fill="#6a9955">// TODO: 验证码 60 秒内不允许重复发送，需要加分布式锁</text>
+    <rect x="264" y="84" width="624" height="20" fill="#264f78"/>
+    <text x="270" y="98" fill="#c586c0">async</text>
+    <text x="316" y="98" fill="#dcdcaa"> sendSmsCode</text>
+    <text x="404" y="98" fill="#d4d4d4">(phone: </text><text x="446" y="98" fill="#569cd6">string</text><text x="478" y="98" fill="#d4d4d4">) {</text>
+    <text x="288" y="122" fill="#d4d4d4">...</text>
+  </g>
+
+  <rect x="470" y="112" width="392" height="206" rx="4" fill="#252526" stroke="#454545"/>
+  <g font-size="13" fill="#cccccc">
+    <rect x="470" y="112" width="392" height="26" fill="#2a2d2e"/>
+    <text x="484" y="130" fill="#e6e6e6">CRUD Starter: 新增条目</text>
+    <text x="484" y="154">⚡ 快速新增条目</text>
+    <text x="484" y="178">➕ 将选中内容追加到条目</text>
+    <line x1="478" y1="192" x2="854" y2="192" stroke="#454545"/>
+    <text x="484" y="214" fill="#858585" font-size="12">—— 以下为 VSCode 自带项 ——</text>
+    <text x="484" y="238">重命名符号  F2</text>
+    <text x="484" y="262">格式化文档</text>
+    <text x="484" y="286">转到定义  F12</text>
+    <text x="484" y="310">更改所有匹配项</text>
+  </g>
+  <path d="M 470 120 L 452 120" stroke="#0098ff" stroke-width="2" marker-end="url(#a2)"/>
+  <defs>
+    <marker id="a2" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 Z" fill="#0098ff"/>
+    </marker>
+  </defs>
+
+  <rect x="252" y="360" width="648" height="166" fill="#252526" stroke="#414141"/>
+  <text x="270" y="386" fill="#dcdcaa" font-size="12" font-weight="bold">三个选区命令的区别（都要求先选中一段文本）</text>
+  <g font-size="12" fill="#cccccc">
+    <text x="270" y="410">① 新增条目 —— 打开表单预填（标题取首行，全文进描述），可改完再保存</text>
+    <text x="270" y="434">② 快速新增 —— 跳过表单静默创建，适合一口气登记多条 TODO</text>
+    <text x="270" y="458">③ 追加到条目 —— QuickPick 选已有条目，带时间戳写进其描述</text>
+  </g>
+  <text x="270" y="492" fill="#858585" font-size="12">无选区时右键出现「登记当前文件为条目」；快捷键 Alt+S（有选区）/ Alt+N（全局新增）</text>
+  <text x="270" y="514" fill="#858585" font-size="12">快捷键可在「文件 → 首选项 → 键盘快捷方式」中搜索 CRUD Starter 修改</text>
+
+  <rect y="526" width="900" height="34" fill="#007acc"/>
+  <text x="16" y="548" fill="#ffffff" font-size="12">⎇ main</text>
+  <text x="780" y="548" fill="#ffffff" font-size="12">auth.service.ts ✓</text>
+</svg>

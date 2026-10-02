@@ -1,0 +1,62 @@
+<svg width="900" height="560" viewBox="0 0 900 560" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="900" height="560" rx="8" fill="#3c3c3c"/>
+  <rect width="900" height="34" rx="8" fill="#3c3c3c"/>
+  <text x="450" y="22" fill="#cccccc" font-size="13" text-anchor="middle">vscode-starter-template — Visual Studio Code</text>
+
+  <rect y="34" width="52" height="526" fill="#333333"/>
+  <g fill="#858585">
+    <rect x="16" y="54" width="20" height="20" rx="3" fill="#858585"/>
+    <rect x="16" y="94" width="20" height="20" rx="3" fill="#858585"/>
+    <rect x="16" y="134" width="20" height="20" rx="3" fill="#858585"/>
+  </g>
+  <rect x="10" y="174" width="32" height="32" rx="4" fill="#094771" stroke="#0098ff"/>
+  <g stroke="#75beff" stroke-width="2" fill="none" stroke-linecap="round">
+    <rect x="17" y="181" width="18" height="18" rx="2.5"/>
+    <line x1="21" y1="187" x2="31" y2="187"/>
+    <line x1="21" y1="190.5" x2="31" y2="190.5"/>
+    <line x1="21" y1="194" x2="28" y2="194"/>
+  </g>
+
+  <rect x="52" y="34" width="240" height="526" fill="#252526"/>
+  <text x="66" y="60" fill="#bbbbbb" font-size="12" font-weight="bold">资源管理器</text>
+  <rect x="52" y="72" width="240" height="24" fill="#37373d"/>
+  <text x="66" y="89" fill="#e7e7e7" font-size="12">VSCODE-STARTER-TEMPLATE</text>
+  <g font-size="12">
+    <text x="72" y="118" fill="#c5c5c5">📦 node_modules</text>
+    <text x="72" y="142" fill="#c5c5c5">📁 src</text>
+    <text x="92" y="164" fill="#9cdcfe">extension.ts</text>
+    <text x="92" y="186" fill="#9cdcfe">constants.ts</text>
+    <text x="72" y="208" fill="#c5c5c5">📄 package.json</text>
+    <text x="72" y="230" fill="#c5c5c5">📄 tsconfig.json</text>
+    <text x="72" y="252" fill="#c5c5c5">📄 esbuild.js</text>
+    <text x="72" y="274" fill="#c5c5c5">📄 agent.md</text>
+    <text x="72" y="296" fill="#c5c5c5">📄 README.md</text>
+  </g>
+  <rect x="52" y="320" width="240" height="150" fill="#1e1e1e" stroke="#333"/>
+  <text x="66" y="344" fill="#dcdcaa" font-size="11" font-weight="bold">📁 .vscode/（调试配置）</text>
+  <text x="72" y="366" fill="#858585" font-size="11">launch.json  ← F5 调试入口</text>
+  <text x="72" y="386" fill="#858585" font-size="11">tasks.json   ← 编译任务</text>
+  <text x="66" y="416" fill="#569cd6" font-size="11">打开文件夹方式：</text>
+  <text x="66" y="436" fill="#cccccc" font-size="11">文件 → 打开文件夹…</text>
+  <text x="66" y="456" fill="#cccccc" font-size="11">选择本仓库根目录</text>
+
+  <rect x="292" y="34" width="608" height="492" fill="#1e1e1e"/>
+  <g font-family="Consolas, monospace" font-size="13">
+    <text x="316" y="70" fill="#569cd6">{</text>
+    <text x="330" y="94" fill="#9cdcfe">"name"</text><text x="400" y="94" fill="#d4d4d4">: </text><text x="410" y="94" fill="#ce9178">"vscode-starter-template"</text><text x="600" y="94" fill="#d4d4d4">,</text>
+    <text x="330" y="118" fill="#9cdcfe">"displayName"</text><text x="425" y="118" fill="#d4d4d4">: </text><text x="435" y="118" fill="#ce9178">"CRUD Starter（界面化增删改查模板）"</text><text x="700" y="118" fill="#d4d4d4">,</text>
+    <text x="330" y="142" fill="#9cdcfe">"version"</text><text x="400" y="142" fill="#d4d4d4">: </text><text x="410" y="142" fill="#ce9178">"0.6.1"</text><text x="460" y="142" fill="#d4d4d4">,</text>
+    <text x="330" y="166" fill="#9cdcfe">"main"</text><text x="382" y="166" fill="#d4d4d4">: </text><text x="392" y="166" fill="#ce9178">"./dist/extension.js"</text><text x="510" y="166" fill="#d4d4d4">,</text>
+    <text x="330" y="190" fill="#9cdcfe">"engines"</text><text x="400" y="190" fill="#d4d4d4">: { </text><text x="418" y="190" fill="#9cdcfe">"vscode"</text><text x="465" y="190" fill="#d4d4d4">: </text><text x="475" y="190" fill="#ce9178">"^1.85.0"</text><text x="525" y="190" fill="#d4d4d4"> }</text>
+    <text x="316" y="214" fill="#569cd6">}</text>
+  </g>
+
+  <rect x="292" y="494" width="608" height="32" fill="#252526"/>
+  <text x="308" y="515" fill="#dcdcaa" font-size="12">📦 2 problems</text>
+  <text x="450" y="515" fill="#858585" font-size="12">没有安装扩展时底部不会出现运行按钮——需要先 F5 启动调试</text>
+
+  <rect y="526" width="900" height="34" fill="#007acc"/>
+  <text x="16" y="548" fill="#ffffff" font-size="12">⎇ main↑</text>
+  <text x="120" y="548" fill="#ffffff" font-size="12">0 ⚠ 0 ✗</text>
+  <text x="760" y="548" fill="#ffffff" font-size="12">TypeScript React… 行 12, 列 4  空格: 2  UTF-8</text>
+</svg>

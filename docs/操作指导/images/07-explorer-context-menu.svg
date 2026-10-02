@@ -1,0 +1,51 @@
+<svg width="900" height="560" viewBox="0 0 900 560" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif">
+  <rect width="900" height="560" rx="8" fill="#3c3c3c"/>
+  <rect width="900" height="34" rx="8" fill="#3c3c3c"/>
+  <text x="450" y="22" fill="#cccccc" font-size="13" text-anchor="middle">资源管理器右键 — 文件与文件夹的不同入口</text>
+
+  <rect y="34" width="52" height="526" fill="#333333"/>
+  <rect x="52" y="34" width="240" height="526" fill="#252526"/>
+  <g font-size="12" fill="#c5c5c5">
+    <text x="66" y="60" fill="#e7e7e7" font-weight="bold">VSCODE-STARTER-TEMPLATE</text>
+    <text x="66" y="88">▼ 📁 src</text>
+    <rect x="58" y="98" width="226" height="20" fill="#37373d"/>
+    <text x="86" y="112" fill="#9cdcfe">📁 modules</text>
+    <text x="104" y="136" fill="#9cdcfe">📁 legacy-auth</text>
+    <text x="122" y="160" fill="#9cdcfe">login.controller.ts</text>
+    <text x="122" y="184" fill="#9cdcfe">sms.service.ts</text>
+    <text x="86" y="208" fill="#9cdcfe">extension.ts</text>
+  </g>
+
+  <rect x="330" y="120" width="330" height="252" rx="4" fill="#252526" stroke="#454545"/>
+  <g font-size="13" fill="#cccccc">
+    <text x="346" y="146">新建文件…</text>
+    <text x="346" y="172">在集成终端中打开</text>
+    <line x1="338" y1="186" x2="648" y2="186" stroke="#454545"/>
+    <text x="346" y="210">复制 / 粘贴 / 重命名…</text>
+    <line x1="338" y1="224" x2="648" y2="224" stroke="#454545"/>
+    <rect x="338" y="234" width="322" height="24" fill="#2a2d2e"/>
+    <text x="346" y="251" fill="#e6e6e6">将文件添加为条目</text>
+    <text x="346" y="277" fill="#e6e6e6">登记文件并摘录内容</text>
+    <text x="346" y="303" fill="#e6e6e6">将文件夹内容登记为条目</text>
+    <text x="346" y="334" fill="#858585" font-size="12">（菜单按右键对象智能显隐，见下方说明）</text>
+  </g>
+  <path d="M 330 132 L 314 132" stroke="#0098ff" stroke-width="2" marker-end="url(#a3)"/>
+  <defs>
+    <marker id="a3" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 Z" fill="#0098ff"/>
+    </marker>
+  </defs>
+
+  <rect x="330" y="396" width="540" height="130" rx="6" fill="#252526" stroke="#414141"/>
+  <text x="346" y="422" fill="#dcdcaa" font-size="12" font-weight="bold">三个入口的显隐规则与产物</text>
+  <g font-size="12" fill="#cccccc">
+    <text x="346" y="446">将文件添加为条目 —— 文件/文件夹都显示；表单预填路径</text>
+    <text x="346" y="470">登记文件并摘录内容 —— 仅文件显示；描述自动带前 20 行内容</text>
+    <text x="346" y="494">将文件夹内容登记为条目 —— 仅文件夹显示；每个文件一条（上限 50）</text>
+  </g>
+  <text x="346" y="518" fill="#858585" font-size="12">后两项的 when 条件由门禁校验；批量创建为静默模式，完成后通知登记数量</text>
+
+  <rect y="526" width="900" height="34" fill="#007acc"/>
+  <text x="16" y="548" fill="#ffffff" font-size="12">⎇ main</text>
+  <text x="780" y="548" fill="#ffffff" font-size="12">资源管理器 · modules/legacy-auth</text>
+</svg>
